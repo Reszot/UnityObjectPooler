@@ -6,19 +6,21 @@ public class Pooler : MonoBehaviour
 	private PooledObject pooledObjectPrefab = null;
 	[SerializeField]
 	private int poolCount = 0;
+	[SerializeField]
+	private Transform objectsContainer = null;
 	
 	private Stack<PooledObject> availableObjects;
-	private List<PooledObject> usedObjects;
+	private HashSet<PooledObject> usedObjects;
 
-	private void Awake()
+	public void Init()
 	{
 		availableObjects = new Stack<PooledObject>();
-		usedObjects = new List<PooledObject>();
+		usedObjects = new HashSet<PooledObject>();
 		for (int i = 0; i < poolCount; i++)
 		{
-			var newObj = Instantiate(pooledObjectPrefab);
+			var newObj = Instantiate(pooledObjectPrefab, objectsContainer);
 			availableObjects.Push(newObj);
-			newObj.ToggleEnabled(false);
+			newObj.Init(ReturnObjectToPool);
 		}
 	}
 
@@ -31,13 +33,16 @@ public class Pooler : MonoBehaviour
 			return obj;
 		}
 		
-		Debug.LogError("No more objects available in pool");
-		return null;
+		var newObj = Instantiate(pooledObjectPrefab, objectsContainer);
+		availableObjects.Push(newObj);
+		newObj.Init(ReturnObjectToPool);
+		return newObj;
 	}
 
 	public void ReturnObjectToPool(PooledObject pooledObject)
 	{
-		pooledObject.Reset();
+		pooledObject.Reset(true);
+		pooledObject.SetParent(objectsContainer);
 		usedObjects.Remove(pooledObject);
 		availableObjects.Push(pooledObject);
 	}
